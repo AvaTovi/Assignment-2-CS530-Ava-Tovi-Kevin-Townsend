@@ -35,6 +35,9 @@ void Assembler::passOne() {
         string opcode = "";
         string operand = "";
 
+        //This function treats anything that starts with a '.' as a comment
+        //and skips it, it skips it and doesnt try to parse it for labels, opcodes,
+        //or operands.
         if (line.length() > 0 && line[0] == '.'){
             contine;
         }
