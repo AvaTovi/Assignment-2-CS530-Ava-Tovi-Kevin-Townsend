@@ -19,18 +19,18 @@ void Assembler::passOne() {
     ifstream infile(sourceFile.c_str());
     //Error message if the .sic file cant be found
     if (!infile) {
-        cout << "Error: Could not open file " << sourceFile << endl;
+        cout << "Error: Could not open file! " << sourceFile << endl;
         return;
     }
 
     //Creating a symbol table and a line we will use to read the file
     SymbolTable SYMTAB;
-    string line;
+    string currentLine;
 
     //Location counter starts at 0 --placeholder--
     int LOCCTR = 0;
 
-    while (getline(infile, line)) {
+    while (getline(infile, currentLine)) {
         string label = "";
         string opcode = "";
         string operand = "";
@@ -38,12 +38,12 @@ void Assembler::passOne() {
         //This function treats anything that starts with a '.' as a comment
         //and skips it, it skips it and doesnt try to parse it for labels, opcodes,
         //or operands.
-        if (line.length() > 0 && line[0] == '.'){
+        if (currentLine.length() > 0 && currentLine[0] == '.'){
             continue;
         }
 
         //This function splits up the line into three parts (label, opcode, and operand)
-        stringstream ss(line);
+        stringstream ss(currentLine);
         ss >> label >> opcode >> operand;
 
         //This handles lines without a label
@@ -68,4 +68,9 @@ void Assembler::passOne() {
     SYMTAB.writeToFile(sourceFile + ".st");
 
     cout << sourceFile << " --Pass 1 Complete-- " << endl;
+}
+
+// Pass 2 will go here:
+void Assembler::passTwo() {
+    // TODO: Implement Pass 2 (translate to machine code, write .l file)
 }
