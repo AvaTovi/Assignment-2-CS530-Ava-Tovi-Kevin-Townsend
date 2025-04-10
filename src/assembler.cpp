@@ -1,23 +1,23 @@
-// class that involves the two passes
+//class that involves the two passes
 
 #include "assembler.h"
-#include "symbol_table.h"
+#include "symtab.h"
 #include <fstream>
 #include <iostream>
 #include <sstream>
 
 using namespace std;
 
-// Constructor: save the source file name for later use
+//Constructor: save the source file name for later use
 Assembler::Assembler(const string& filename) {
     sourceFile = filename;
 }
 
-// Pass 1: Build symbol table and calculate addresses
+//Pass 1: Build symbol table and calculate addresses
 void Assembler::passOne() {
-    // Open the input .sic file
+    //Open the input .sic file
     ifstream infile(sourceFile.c_str());
-    // Error message if the .sic file cant be found
+    //Error message if the .sic file cant be found
     if (!infile) {
         cout << "Error: Could not open file " << sourceFile << endl;
         return;
@@ -39,7 +39,33 @@ void Assembler::passOne() {
         //and skips it, it skips it and doesnt try to parse it for labels, opcodes,
         //or operands.
         if (line.length() > 0 && line[0] == '.'){
-            contine;
+            continue;
         }
+
+        //This function splits up the line into three parts (label, opcode, and operand)
+        stringstream ss(line);
+        ss >> label >> opcode >> operand;
+
+        //This handles lines without a label
+        if (opcode.empty() && !label.empty()) {
+            opcode = label;
+            label = "";
+        }
+
+        cout << "Label: " << label << " Opcode: " << opcode << " Operand: " << operand << endl;
+
+        //Add label to the symbol table with its address(LOCCTR)
+        if (!label.empty()) {
+            SYMTAB.insert(label, LOCCTR);
+        }
+
+        //Increment location counter (placeholder: assume all instructions are 3 bytes)
+        //So if a LOCCTR = 1000 then the next instruction will be 1003
+        LOCCTR += 3;
     }
+    //this will wite the SYMTAB to the file after all the lines have been read.
+    //.st is the extension for SymbolTable
+    SYMTAB.writeToFile(sourceFile + ".st");
+
+    cout << sourceFile << " --Pass 1 Complete-- " << endl;
 }
