@@ -73,4 +73,5 @@ void Assembler::passOne() {
 // Pass 2 will go here:
 void Assembler::passTwo() {
     // TODO: Implement Pass 2 (translate to machine code, write .l file)
+    int x = 0;
 }
