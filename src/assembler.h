@@ -11,7 +11,7 @@ class Assembler {
 public:
     Assembler(const string& filename);
     void passOne();
-    void passTwo(); // Don't need to touch this was incorporated for you
+    void passTwo(const string& interimfile, SymbolTable& SYMTAB); // Don't need to touch this was incorporated for you
 
 private:
     string sourceFile;
