@@ -44,5 +44,3 @@ void SymbolTable::writeToFile(const string& filename) {
         cout << "⚠️  Unable to create symbol table file: " << filename << endl;
     }
 }
-
-
