@@ -87,15 +87,16 @@ string Assembler::passOne() {
     SYMTAB.writeToFile(sourceFile + ".st");
 
     cout << sourceFile << " --Pass 1 Complete-- " << endl;
-    
+
     return intermFileName;
 }
 
 // Pass 2 will go here:
 //Pass two takes the intermediate file and symbol table from pass one as parameters
-void Assembler::passTwo(const string& intermfile, SymbolTable& SYMTAB){
+void Assembler::passTwo(const string& intermfile){
     // TODO: Implement Pass 2 (translate to machine code, write .l file)
     //Use Opcode table to assist in generating object code
+    
     OpcodeTab OPTAB;
 
     //Open the intermediate file recieved from pass one
