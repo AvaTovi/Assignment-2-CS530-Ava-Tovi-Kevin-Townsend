@@ -3,6 +3,7 @@
 #include "assembler.h"
 #include "symtab.h"
 #include "opcodetab.h"
+#include "utils.h"
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -73,12 +74,16 @@ void Assembler::passOne() {
 
 // Pass 2 will go here:
 //Pass two takes the intermediate file and symbol table from pass one as parameters
-void Assembler::passTwo(const string& intermfile, const SymbolTable& SYMTAB){
+void Assembler::passTwo(const string& intermfile, SymbolTable& SYMTAB){
     // TODO: Implement Pass 2 (translate to machine code, write .l file)
+    //Use Opcode table to assist in generating object code
     OpcodeTab OPTAB;
 
     //Open the intermediate file recieved from pass one
     ifstream infile(intermfile.c_str());
+
+    //Open the listing file to prepare writing to it
+    ofstream listingFile(sourceFile + ".l");
 
     //currentline is an iterator, that will go through the file line by line
     string currentLine;
@@ -90,7 +95,7 @@ void Assembler::passTwo(const string& intermfile, const SymbolTable& SYMTAB){
         string operand = "";
         string objcode = "";
 
-        //Any line that starts with a '.' is a comment
+        //Any line that starts with a '.' is a comment (ignore it)
         if (currentLine.length() > 0 && currentLine[0] == '.'){
             continue;
         }
@@ -111,8 +116,7 @@ void Assembler::passTwo(const string& intermfile, const SymbolTable& SYMTAB){
         string cleanOpcode = opcode;
         //Temporary variable for the operand that will be used to get the label's address from the Symbol Table
         string cleanOperand = operand;
-        //Instruction format
-        int format;
+
         //Addressing modes
         int n = 0;
         int i = 0;
@@ -120,8 +124,7 @@ void Assembler::passTwo(const string& intermfile, const SymbolTable& SYMTAB){
         int b = 0;
         int p = 0;
         int e = 0;
-        //displacement
-        int disp; 
+        
         
         // n and i flags
         //Check for indirect addressing
@@ -141,11 +144,13 @@ void Assembler::passTwo(const string& intermfile, const SymbolTable& SYMTAB){
             n = 1;
             i = 1;
         }
+
         //Check for indexed addressing
         if(cleanOperand.find(",X") != string::npos){
             x = 1;
             cleanOperand = cleanOperand.substr(0, cleanOperand.find(",X"));
         }
+
         //Checks if the opcode starts with a '+' which indicates extended format
         //if so create a substring that starts after the '+' and assign it to cleanOpcode
         bool isExtended = false;
@@ -155,11 +160,10 @@ void Assembler::passTwo(const string& intermfile, const SymbolTable& SYMTAB){
             e = 1;
         }
 
-        //Checks if the opcode instruction exists in the Opcode Table, if so
-        //Add the two digit opcodeHex to the start of the objectcode
+        //Assign the correct instruction format
+        int format;
         if(OPTAB.isInstruction(opcode)){ 
             OpcodeInfo info = OPTAB.getOpcodeInfo(opcode);
-            objcode = info.opcodeHex;
 
             //Extended format
             if(isExtended){
@@ -171,8 +175,10 @@ void Assembler::passTwo(const string& intermfile, const SymbolTable& SYMTAB){
             }
         }
 
-        //Check if base relative or pc relative
-        int ta = stoi(SYMTAB.getAddress(cleanOperand), nullptr, 16); //Target address
+        //Check if base relative or pc relative and calculate displacement
+        int disp;
+        int ta = SYMTAB.getAddress(cleanOperand); //(if address stored as int)
+        //int ta = stoi(SYMTAB.getAddress(cleanOperand), nullptr, 16); (if address stored as string)
         int pc = stoi(location, nullptr, 16) + format; //Program counter
         int diff = ta - pc;
         if(diff >= -2048 && diff <= 2047){
@@ -180,12 +186,57 @@ void Assembler::passTwo(const string& intermfile, const SymbolTable& SYMTAB){
             b = 0;
             disp = diff;
         }
+        //Base relative
         else{
             p = 0;
             b = 1;
+            int base = SYMTAB.getAddress("BASE");
+            // int base = stoi(SYMTAB.getAddress("BASE"), nullptr, 16); (if address stored as string)
+            disp = ta - base;
+        }
+
+        //Construct Object code
+        OpcodeInfo info = OPTAB.getOpcodeInfo(cleanOpcode); 
+        int opcodeInt = stoi(info.opcodeHex, nullptr, 16); //Get the opcode hex value from the Opcode Table
+                                                           //And convert it to a hex integer
+        opcodeInt = (opcodeInt & 0xFC) | (n<<1) | i; //first two nibbles, made up by opcode & n/i flags
+                                                    
+        int flags = (x << 3) | (b << 2) | (p << 1) | e; //third nibble made up by the xbpe flags
+
+        //Check if format 3 or format 4
+        if(format == 1){
+            objcode = info.opcodeHex;
+        }
+        else if(format == 2){
+            string reg1 = "";
+            string reg2 = "";
+            string trash = "";
+
+            stringstream ss(operand);
+            ss >> trash >> reg1 >> reg2;
+            int r1 = getRegisterNum(reg1);
+            int r2 = getRegisterNum(reg2);
+
+        }
+        else if(format == 3){ //format 3 (last 3 nibbles)
+            int objCode = (opcodeInt << 16) | (flags << 12) | (disp & 0xFFF);
+            stringstream ss;
+            ss << hex << uppercase << setfill('0') << setw(6) << objCode;
+            objcode = ss.str();
+        }
+        else if(format == 4){ //format 4 (last 5 nibbles)
+            int objCode = (opcodeInt << 24) | (flags << 20) | (ta & 0xFFFFF);
+            stringstream ss;
+            ss << hex << uppercase << setfill('0') << setw(8) << objCode;
+            objcode = ss.str();
         }
         
-        cout << "Location: " << location <<  " Label: " << label << " Opcode: " << opcode << " Operand: " << operand << "Object Code: " << objcode << endl;
+        //Write to listing file
+        listingFile << location << "    " << label << "    " << opcode << "    " << operand << "    " << objcode << endl;
+        
+        
     }
+
+    listingFile.close();
   
 }

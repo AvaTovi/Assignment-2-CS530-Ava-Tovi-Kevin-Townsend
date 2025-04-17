@@ -27,7 +27,7 @@ int main(int argc, char* argv[]) {
         Assembler assembler(filename);
 
         // Run Pass 1 (symbol table + address calculation)
-        assembler.passOne();
+        string intermfile = assembler.passOne();
 
 
         //So far this part will handle the output of the program ran, 
@@ -36,6 +36,7 @@ int main(int argc, char* argv[]) {
 
         //Continue from here, --Do Pass 2 logic--
         //Make sure the Pass 2 line is assembler.passTwo like how I did my Pass 1
+        //assembler.passTwo(intermfile)
 
         index++;
     }
