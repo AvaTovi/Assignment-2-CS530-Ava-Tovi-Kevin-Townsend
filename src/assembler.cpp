@@ -3,6 +3,7 @@
 #include "assembler.h"
 #include "symtab.h"
 #include "opcodetab.h"
+#include "utils.h"
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -11,42 +12,38 @@
 using namespace std;
 
 //Constructor: save the source file name for later use
-Assembler::Assembler(const string & filename) {
+Assembler::Assembler(const string& filename) {
     sourceFile = filename;
 }
 
 //Pass 1: Build symbol table and calculate addresses
-// --YOU FORGOT THE INTERMFILE, INITIALIZE THE INTERMFILE I PASSED IN PASSTWO--
-void Assembler::passOne() {
+string Assembler::passOne() {
     //Open the input .sic file
     ifstream infile(sourceFile.c_str());
-
     //Error message if the .sic file cant be found
     if (!infile) {
         cout << "Error: Could not open file! " << sourceFile << endl;
-        return;
+        return "";
     }
 
     //This creates the intermediate file by replacing the ".sic" with ".interm"
     string intermFileName = sourceFile.substr(0, sourceFile.length() - 4) + ".interm";
-    ofstream intermfile(intermFileName);
-    //Error message if can't do it
-    if (!intermfile) {
-        cout << "⚠️  Could not create intermediate file: " << intermFileName << endl;
-        return;
-    }
+     ofstream intermfile(intermFileName);
+     //Error message if can't do it
+     if (!intermfile) {
+         cout << "⚠️  Could not create intermediate file: " << intermFileName << endl;
+         return "";
+     }
 
     //Creating a symbol table and a line we will use to read the file
     SymbolTable SYMTAB;
     string currentLine;
+
     //Location counter starts at 0 --placeholder--
     int LOCCTR = 0;
 
     while (getline(infile, currentLine)) {
         string location = "";
-        string label = "";
-        string opcode = "";
-        string operand = "";
 
         //This function treats anything that starts with a '.' as a comment
         //and skips it, it skips it and doesnt try to parse it for labels, opcodes,
@@ -57,15 +54,29 @@ void Assembler::passOne() {
 
         //This function splits up the line into three parts (label, opcode, and operand)
         stringstream ss(currentLine);
-        ss >> label >> opcode >> operand;
+        string p1, p2, p3;
+        ss >> p1 >> p2 >> p3;
+
+        string label = "", opcode = "", operand = "";
 
         //This handles lines without a label
-        if (opcode.empty() && !label.empty()) {
-            opcode = label;
-            label = "";
+        // If the code has 3 partsthen it will use the label opcode operand
+        if (!p3.empty()) {
+            label = p1;
+            opcode = p2;
+            operand = p3;
+        }
+        // If the code has 2 parts then it will use the opcode operand
+        else if (!p2.empty()) {
+            opcode = p1;
+            operand = p2;
+        }
+        // If 1 it is 1 part then it's just an opcode
+        else {
+            opcode = p1;
         }
 
-        cout << " Location: " << location << " Label: " << label << " Opcode: " << opcode << " Operand: " << operand << endl;
+        cout << "Location: " << location << "Label: " << label << " Opcode: " << opcode << " Operand: " << operand << endl;
 
         //Add label to the symbol table with its address(LOCCTR)
         if (!label.empty()) {
@@ -75,28 +86,36 @@ void Assembler::passOne() {
         intermfile << hex << uppercase << setw(4) << setfill('0') <<
         LOCCTR << " " << label << " " << opcode << " " << operand << endl;
 
-
         //Increment location counter (placeholder: assume all instructions are 3 bytes)
         //So if a LOCCTR = 1000 then the next instruction will be 1003
         LOCCTR += 3;
     }
     //This closes the file when we are done writing to it
     intermfile.close();
+
     //this will wite the SYMTAB to the file after all the lines have been read.
     //.st is the extension for SymbolTable
     SYMTAB.writeToFile(sourceFile + ".st");
 
     cout << sourceFile << " --Pass 1 Complete-- " << endl;
+
+    return intermFileName;
 }
 
 // Pass 2 will go here:
 //Pass two takes the intermediate file and symbol table from pass one as parameters
-void Assembler::passTwo(const string& intermfile, const SymbolTable& SYMTAB){
+string Assembler::passTwo(const string& intermfile){
     // TODO: Implement Pass 2 (translate to machine code, write .l file)
+    //Use Opcode table to assist in generating object code
+    
     OpcodeTab OPTAB;
 
     //Open the intermediate file recieved from pass one
     ifstream infile(intermfile.c_str());
+
+    //Open the listing file to prepare writing to it
+    string listingFileName = sourceFile + ".l";
+    ofstream listingFile(listingFileName);
 
     //currentline is an iterator, that will go through the file line by line
     string currentLine;
@@ -108,7 +127,7 @@ void Assembler::passTwo(const string& intermfile, const SymbolTable& SYMTAB){
         string operand = "";
         string objcode = "";
 
-        //Any line that starts with a '.' is a comment
+        //Any line that starts with a '.' is a comment (ignore it)
         if (currentLine.length() > 0 && currentLine[0] == '.'){
             continue;
         }
@@ -129,8 +148,7 @@ void Assembler::passTwo(const string& intermfile, const SymbolTable& SYMTAB){
         string cleanOpcode = opcode;
         //Temporary variable for the operand that will be used to get the label's address from the Symbol Table
         string cleanOperand = operand;
-        //Instruction format
-        int format;
+
         //Addressing modes
         int n = 0;
         int i = 0;
@@ -138,8 +156,7 @@ void Assembler::passTwo(const string& intermfile, const SymbolTable& SYMTAB){
         int b = 0;
         int p = 0;
         int e = 0;
-        //displacement
-        int disp; 
+        
         
         // n and i flags
         //Check for indirect addressing
@@ -159,11 +176,13 @@ void Assembler::passTwo(const string& intermfile, const SymbolTable& SYMTAB){
             n = 1;
             i = 1;
         }
+
         //Check for indexed addressing
         if(cleanOperand.find(",X") != string::npos){
             x = 1;
             cleanOperand = cleanOperand.substr(0, cleanOperand.find(",X"));
         }
+
         //Checks if the opcode starts with a '+' which indicates extended format
         //if so create a substring that starts after the '+' and assign it to cleanOpcode
         bool isExtended = false;
@@ -173,11 +192,16 @@ void Assembler::passTwo(const string& intermfile, const SymbolTable& SYMTAB){
             e = 1;
         }
 
-        //Checks if the opcode instruction exists in the Opcode Table, if so
-        //Add the two digit opcodeHex to the start of the objectcode
-        if(OPTAB.isInstruction(opcode)){ 
-            OpcodeInfo info = OPTAB.getOpcodeInfo(opcode);
-            objcode = info.opcodeHex;
+        // Skip assembler directives (START, END, BASE, etc.)
+        if (opcode == "START" || opcode == "END" || opcode == "BASE" || 
+            opcode == "RESW" || opcode == "RESB" || opcode == "WORD" || 
+            opcode == "BYTE") {
+        continue;
+        }
+        //Assign the correct instruction format
+        int format;
+        if(OPTAB.isInstruction(cleanOpcode)){ 
+            OpcodeInfo info = OPTAB.getOpcodeInfo(cleanOpcode);
 
             //Extended format
             if(isExtended){
@@ -189,8 +213,16 @@ void Assembler::passTwo(const string& intermfile, const SymbolTable& SYMTAB){
             }
         }
 
-        //Check if base relative or pc relative
-        int ta = stoi(SYMTAB.getAddress(cleanOperand), nullptr, 16); //Target address
+        //Check if base relative or pc relative and calculate displacement
+        int disp;
+        //(if address stored as int)
+        int ta;
+        if (!cleanOperand.empty() && isdigit(cleanOperand[0])) {
+            ta = stoi(cleanOperand);} 
+        else {
+            ta = SYMTAB.getAddress(cleanOperand);
+        } 
+        //int ta = stoi(SYMTAB.getAddress(cleanOperand), nullptr, 16); (if address stored as string)
         int pc = stoi(location, nullptr, 16) + format; //Program counter
         int diff = ta - pc;
         if(diff >= -2048 && diff <= 2047){
@@ -198,12 +230,59 @@ void Assembler::passTwo(const string& intermfile, const SymbolTable& SYMTAB){
             b = 0;
             disp = diff;
         }
+        //Base relative
         else{
             p = 0;
             b = 1;
+            int base = SYMTAB.getAddress("BASE");
+            // int base = stoi(SYMTAB.getAddress("BASE"), nullptr, 16); (if address stored as string)
+            disp = ta - base;
+        }
+
+        //Construct Object code
+        OpcodeInfo info = OPTAB.getOpcodeInfo(cleanOpcode); 
+        int opcodeInt = stoi(info.opcodeHex, nullptr, 16); //Get the opcode hex value from the Opcode Table
+                                                           //And convert it to a hex integer
+        opcodeInt = (opcodeInt & 0xFC) | (n<<1) | i; //first two nibbles, made up by opcode & n/i flags
+                                                    
+        int flags = (x << 3) | (b << 2) | (p << 1) | e; //third nibble made up by the xbpe flags
+
+        //Check if format 3 or format 4
+        if(format == 1){
+            objcode = info.opcodeHex;
+        }
+        else if(format == 2){
+            string reg1 = "";
+            string reg2 = "";
+            string trash = "";
+
+            stringstream ss(operand);
+            ss >> trash >> reg1 >> reg2;
+            //int r1 = getRegisterNum(reg1);
+            //int r2 = getRegisterNum(reg2);
+
+        }
+        else if(format == 3){ //format 3 (last 3 nibbles)
+            int objCode = (opcodeInt << 16) | (flags << 12) | (disp & 0xFFF);
+            stringstream ss;
+            ss << hex << uppercase << setfill('0') << setw(6) << objCode;
+            objcode = ss.str();
+        }
+        else if(format == 4){ //format 4 (last 5 nibbles)
+            int objCode = (opcodeInt << 24) | (flags << 20) | (ta & 0xFFFFF);
+            stringstream ss;
+            ss << hex << uppercase << setfill('0') << setw(8) << objCode;
+            objcode = ss.str();
         }
         
-        cout << "Location: " << location <<  " Label: " << label << " Opcode: " << opcode << " Operand: " << operand << "Object Code: " << objcode << endl;
+        //Write to listing file
+        listingFile << location << "    " << label << "    " << opcode << "    " << operand << "    " << objcode << endl;
+        
+        
     }
+
+    listingFile.close();
+
+    return listingFileName;
   
 }

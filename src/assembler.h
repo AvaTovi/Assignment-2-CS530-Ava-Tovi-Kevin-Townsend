@@ -1,4 +1,5 @@
 // declarations
+#include "symtab.h"
 
 //Assembler decleration
 #ifndef ASSEMBLER_H
@@ -10,11 +11,12 @@ using namespace std;
 class Assembler {
 public:
     Assembler(const string& filename);
-    void passOne();
-    void passTwo(const string& interimfile, SymbolTable& SYMTAB); // Don't need to touch this was incorporated for you
+    string passOne();
+    string passTwo(const string& interimfile); // Don't need to touch this was incorporated for you
 
 private:
     string sourceFile;
+    SymbolTable SYMTAB;
 };
 
 #endif
