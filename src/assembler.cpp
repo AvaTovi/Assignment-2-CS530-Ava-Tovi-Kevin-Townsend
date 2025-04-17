@@ -7,6 +7,7 @@
 #include <fstream>
 #include <iostream>
 #include <sstream>
+#include <iomanip>
 
 using namespace std;
 
@@ -16,7 +17,7 @@ Assembler::Assembler(const string& filename) {
 }
 
 //Pass 1: Build symbol table and calculate addresses
-void Assembler::passOne() {
+string Assembler::passOne() {
     //Open the input .sic file
     ifstream infile(sourceFile.c_str());
     //Error message if the .sic file cant be found
@@ -24,6 +25,15 @@ void Assembler::passOne() {
         cout << "Error: Could not open file! " << sourceFile << endl;
         return;
     }
+
+    //This creates the intermediate file by replacing the ".sic" with ".interm"
+    string intermFileName = sourceFile.substr(0, sourceFile.length() - 4) + ".interm";
+     ofstream intermfile(intermFileName);
+     //Error message if can't do it
+     if (!intermfile) {
+         cout << "⚠️  Could not create intermediate file: " << intermFileName << endl;
+         return;
+     }
 
     //Creating a symbol table and a line we will use to read the file
     SymbolTable SYMTAB;
@@ -33,6 +43,7 @@ void Assembler::passOne() {
     int LOCCTR = 0;
 
     while (getline(infile, currentLine)) {
+        string location = "";
         string label = "";
         string opcode = "";
         string operand = "";
@@ -54,22 +65,30 @@ void Assembler::passOne() {
             label = "";
         }
 
-        cout << "Label: " << label << " Opcode: " << opcode << " Operand: " << operand << endl;
+        cout << "Location: " << location << "Label: " << label << " Opcode: " << opcode << " Operand: " << operand << endl;
 
         //Add label to the symbol table with its address(LOCCTR)
         if (!label.empty()) {
             SYMTAB.insert(label, LOCCTR);
         }
 
+        intermfile << hex << uppercase << setw(4) << setfill('0') <<
+        LOCCTR << " " << label << " " << opcode << " " << operand << endl;
+
         //Increment location counter (placeholder: assume all instructions are 3 bytes)
         //So if a LOCCTR = 1000 then the next instruction will be 1003
         LOCCTR += 3;
     }
+    //This closes the file when we are done writing to it
+    intermfile.close();
+
     //this will wite the SYMTAB to the file after all the lines have been read.
     //.st is the extension for SymbolTable
     SYMTAB.writeToFile(sourceFile + ".st");
 
     cout << sourceFile << " --Pass 1 Complete-- " << endl;
+    
+    return intermFileName;
 }
 
 // Pass 2 will go here:
