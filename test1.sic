@@ -1,0 +1,17 @@
+TEST1    START   2000
+BEGIN    LDA     COUNT
+         ADD     #5
+         STA     COUNT
+         BASE    DATA
+         +JSUB   PRINT
+         LDX     #0
+LOOP     LDA     DATA,X
+         ADD     VALUE
+         STA     DATA,X
+         TIX     COUNT
+         JLT     LOOP
+         RSUB
+COUNT    WORD    03
+VALUE    WORD    01
+DATA     RESW    10
+         END     BEGIN

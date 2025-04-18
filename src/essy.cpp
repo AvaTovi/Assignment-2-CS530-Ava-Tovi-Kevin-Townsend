@@ -37,7 +37,7 @@ int main(int argc, char* argv[]) {
         //Continue from here, --Do Pass 2 logic--
         //Make sure the Pass 2 line is assembler.passTwo like how I did my Pass 1
 
-        assembler.passTwo(intermfile);
+        string listingfile = assembler.passTwo(intermfile);
 
         index++;
     }

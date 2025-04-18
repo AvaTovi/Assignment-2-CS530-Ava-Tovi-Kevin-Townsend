@@ -4,6 +4,7 @@
 #ifndef ASSEMBLER_H
 #define ASSEMBLER_H
 #include <string>
+#include "symtab.h"
 
 using namespace std;
 
@@ -11,7 +12,7 @@ class Assembler {
 public:
     Assembler(const string& filename);
     string passOne();
-    void passTwo(const string& interimfile); // Don't need to touch this was incorporated for you
+    string passTwo(const string& interimfile); // Don't need to touch this was incorporated for you
 
 private:
     string sourceFile;
