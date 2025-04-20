@@ -4,6 +4,7 @@
 #include "symtab.h"
 #include <fstream>
 #include <iostream>
+#include <iomanip>
 
 using namespace std;
 
@@ -36,7 +37,8 @@ void SymbolTable::writeToFile(const string& filename) {
     //triggering error message
     if (symFile) {
         for (const auto & entry : table) {
-            symFile << entry.first << " " << entry.second << endl;
+            symFile << entry.first << " " << uppercase << setw(4) << setfill('0') 
+                << hex << entry.second << endl;
         }
         cout << "✅ Symbol table export complete! File saved as: " << filename << endl;
     } 
