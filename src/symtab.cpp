@@ -7,6 +7,12 @@
 
 using namespace std;
 
+void SymbolTable::printAll() const {
+    for (auto const & entry : table) {
+        std::cout << entry.first << " -> 0x" 
+        << hex << uppercase << entry.second << dec << "\n";
+    }
+}
 //This function will add the label and the address to the symbol table
 void SymbolTable::insert(const string & label, int address) {
     if (table.find(label) == table.end()) {
@@ -18,7 +24,7 @@ void SymbolTable::insert(const string & label, int address) {
 
 //This handles the address part for the label it is on. This will be used in the 
 //Pass 2, returns negative 1 to signal there is no address and label available.
-int SymbolTable::getAddress(const string & label) {
+int SymbolTable::getAddress(const string & label){
     if (table.find(label) != table.end()) {
         return table[label];
     } else {
