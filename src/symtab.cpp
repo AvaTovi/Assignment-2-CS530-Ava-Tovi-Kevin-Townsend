@@ -42,7 +42,11 @@ void SymbolTable::writeToFile(const string& filename) {
     //triggering error message
     if (symFile) {
         for (const auto & entry : table) {
-            symFile << entry.first << " " << entry.second << endl;
+            symFile
+            << entry.first << " "
+            << hex << uppercase
+            << setw(4) << setfill('0') << entry.second
+            << dec << "\n";
         }
         cout << "✅ Symbol table export complete! File saved as: " << filename << endl;
     } 
