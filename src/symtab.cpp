@@ -7,6 +7,12 @@
 
 using namespace std;
 
+void SymbolTable::printAll() const {
+    for (auto const & entry : table) {
+        std::cout << entry.first << " -> 0x" 
+        << hex << uppercase << entry.second << dec << "\n";
+    }
+}
 //This function will add the label and the address to the symbol table
 void SymbolTable::insert(const string & label, int address) {
     if (table.find(label) == table.end()) {

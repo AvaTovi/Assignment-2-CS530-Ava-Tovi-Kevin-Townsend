@@ -1,10 +1,10 @@
 // declarations
-#include "symtab.h"
 
 //Assembler decleration
 #ifndef ASSEMBLER_H
 #define ASSEMBLER_H
 #include <string>
+#include "symtab.h"
 
 using namespace std;
 
