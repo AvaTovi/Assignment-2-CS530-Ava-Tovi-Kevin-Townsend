@@ -209,24 +209,9 @@ string Assembler::passTwo(const string& intermfile){
             continue;          // skip further processing of this line
         }
 
-        //Skip assembler directives because they don't generate object code
-        if (opcode == "START" || opcode == "END" || opcode == "RESW" ||
-            opcode == "RESB" || opcode == "WORD" || opcode == "BYTE") {   
-            listingFile << location << "    " << label << "    " << opcode << "    " 
-            << operand << "    " << objcode << endl;
-            continue;
-        }
-
         // Strip leading '+' for extended format, then check if it's really an instruction
-        string cleanOp = (!opcode.empty() && opcode[0] == '+')
-        ? opcode.substr(1): opcode;
+        string cleanOp = (opcode[0] == '+') ? opcode.substr(1): opcode;
 
-        //Skip any token that still isn't in the Opcode Table
-        if (!OPTAB.isInstruction(cleanOp)) {
-        listingFile << location << "    " << label << "    " << opcode << "    "
-        << operand << "    " << objcode << endl;
-        continue;
-        }
         //Temporary variable for the opcode that will be used to get the opcode info from the Opcode Table
         string cleanOpcode = opcode;
         //Temporary variable for the operand that will be used to get the label's address from the Symbol Table
@@ -414,8 +399,7 @@ string Assembler::passTwo(const string& intermfile){
         }
         
         //Write to listing file
-        listingFile << location << "    " << label << "    " << opcode << "    " << operand << "    " << objcode << endl;
-        
+        listingFile << location << "    " << label    << "    " << opcode   << "    " << operand  << "    " << objcode  << "\n";        
         
     }
     listingFile.close();
