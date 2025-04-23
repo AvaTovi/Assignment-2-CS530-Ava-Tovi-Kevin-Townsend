@@ -6,13 +6,12 @@
 #include <unordered_map>
 #include <unordered_set>
 
-//This function takes a mnemonic string as a parameter and returns
-//the corresponding register number.
+//This function looks up a register name and returns its numeric code
 int getRegisterNum(const string& mem){
     static unordered_map<string, int> registers = {
-        {"A", 0}, {"X", 1}, {"L", 2}, {"B", 3}, 
-        {"S", 4}, {"T", 5}, {"F", 6}, {"PC", 8},
-        {"SW", 9}
+        {"A", 0}/* Accumulator */, {"X", 1}/* index register */, {"L", 2}/* link register */,
+        {"B", 3}/* base register */, {"S", 4}/* S register */, {"T", 5}/* T register */, 
+        {"F", 6}/* Floating-point register */, {"PC", 8}/* program counter */, {"SW", 9}/* status word */
 
     };
 

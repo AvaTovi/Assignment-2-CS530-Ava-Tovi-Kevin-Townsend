@@ -1,4 +1,6 @@
 //class that involves the two passes
+//Ava did passOne and Kevin did passTwo
+//And for debugging we both helped on both passOne and passTwo
 
 #include "assembler.h"
 #include "symtab.h"
@@ -86,8 +88,6 @@ string Assembler::passOne() {
             opcode = p1;
         }
 
-        cout << "Location: " << location << "Label: " << label << " Opcode: " << opcode << " Operand: " << operand << endl;
-
         //This function skips START,END,BASE directives
         if (!label.empty() &&
         opcode != "START" &&
@@ -103,43 +103,46 @@ string Assembler::passOne() {
         intermfile << setw(4) << setfill('0') << hex << uppercase << LOCCTR
            << "  " << label << " " << opcode << " " << operand << endl;
 
-        //Increment location counter 
-        //So if a LOCCTR = 1000 then the next instruction will be 1003
-        
+        //This will adjust the LOCCTR based on which ever directive or instruction it 
+        //is out of these; which ever format it uses
         if (opcode == "BYTE")
+            // If it is 'X' then that means the it is 1 byte
             LOCCTR += (operand[0] == 'X') ? (operand.length() - 3) / 2 : operand.length() - 3;
         else if (opcode == "WORD")
+            // WORD is 3 bytes
             LOCCTR += 3;
         else if (opcode == "RESB")
+            //This means that RESB is going to reserve the specified number of bytes
             LOCCTR += stoi(operand);
         else if (opcode == "RESW")
+            // This means RESW will multiply the 3 bytes by the integer number and use the 
+            //outcome
             LOCCTR += 3 * stoi(operand);
         else if (!opcode.empty() && opcode[0] == '+')
+            // If it is a '+' that means it is 4 bytes.
             LOCCTR += 4;
         else if (OPTAB.isInstruction(opcode))
+            //All of the other SIC/XE instructions will use their default format size
+            //v This is what will give the byte length at the end
             LOCCTR += OPTAB.getOpcodeInfo(opcode).format[0];
     }
     //This closes the file when we are done writing to it
     intermfile.close();
 
-    //this will wite the SYMTAB to the file after all the lines have been read.
+    //this will write the SYMTAB to the file after all the lines have been read.
     //.st is the extension for SymbolTable
     string SYMTABFileName = sourceFile.substr(0, sourceFile.length() - 4) + ".st";
     SYMTAB.writeToFile(SYMTABFileName);
     // Debug: print symbol table to console
-    cout << "-- SYMBOL TABLE DUMP --" << endl;
+    cout << "-- INFO PRINTED TO SYMTAB --" << endl;
     SYMTAB.printAll(); 
-    cout << "-----------------------" << endl;
     
-    cout << sourceFile << " --Pass 1 Complete-- " << endl;
-
     return intermFileName;
 }
 
 // Pass 2 will go here:
 //Pass two takes the intermediate file from pass one as a parameter
 string Assembler::passTwo(const string& intermfile){
-    // TODO: Implement Pass 2 (translate to machine code, write .l file)
 
     //Use Opcode table to assist in generating object code
     OpcodeTab OPTAB;
@@ -153,8 +156,12 @@ string Assembler::passTwo(const string& intermfile){
 
     //currentline is an iterator, that will go through the file line by line
     string currentLine;
-    int base = 0;
 
+    //initialize the variable for base register addressing
+    int base = 0; 
+
+    //this will read each line and it will reset all the parts
+    //so no old data is being used when it is getting parsed
     while(getline(infile, currentLine)){
         string location = "";
         string label = "";
@@ -162,33 +169,47 @@ string Assembler::passTwo(const string& intermfile){
         string operand = "";
         string objcode = "";
 
-        //flags
+        //nixbpe flags
+        //indriect addressing
         int n = 0;
+        //immediate addressing
         int i = 0;
+        //indexed addressing
         int x = 0;
+        //base-relative
         int b = 0;
-        int p = 1; //(pc-relative addressing in most cases)
+        //PC relative
+        int p = 1;
+        //extended format 
         int e = 0;
 
-        int ta; //Target Address
-        int pc; //Program Counter
-        int disp; //displacement
+        //Target Address
+        int ta; 
+        //Program Counter
+        int pc;
+        //displacement 
+        int disp; 
 
-        int format = 0; //insruction format
+        //insruction format
+        int format = 0; 
 
         //Any line that starts with a '.' is a comment (ignore it)
         if (currentLine.length() > 0 && currentLine[0] == '.'){
             continue;
         }
 
-        // --- Split by tokens to handle missing labels cleanly -------
+        //this will split the current line into individual words
         vector<string> parts;
         string field;
         stringstream ss(currentLine);
+
+        //this grabs each word from the line and alligns it with the correct parts
         while (ss >> field) {
             parts.push_back(field);
         }
 
+        //This assigns the right amount of fields in the code based on how many instructions
+        //the line is using
         if (parts.size() == 4) {
             location = parts[0];
             label    = parts[1];
@@ -208,6 +229,7 @@ string Assembler::passTwo(const string& intermfile){
             operand  = "";  
         }
         else {
+            //When not a valid line it will skip it
             continue;             
         }
 
@@ -216,7 +238,7 @@ string Assembler::passTwo(const string& intermfile){
         opcode  = trim(opcode);
         operand = trim(operand);
 
-        //Skip assembler directives because that don't generate object code
+        //This will handle just printing these out in the columns and skipping the rest
         if (opcode == "START" || opcode == "END" || opcode == "RESW" ||
             opcode == "RESB") {   
                 listingFile << setfill(' ') << setw(8) << left << location
@@ -224,12 +246,15 @@ string Assembler::passTwo(const string& intermfile){
                     << setw(8) << left << opcode
                     << setw(10) << left << operand 
                     << setw(8) << left << objcode << endl;
+            // go on to the next line without doing object‑code work
             continue;
         }
 
+        //Handle special case assembler directives/opcodes
         //This handles BASE directive
         if (opcode == "BASE") {
-            base = SYMTAB.getAddress(operand);   // store base register value
+            //this will store the base register value
+            base = SYMTAB.getAddress(operand);   
             if (base == -1)
                 cout << "⚠️  BASE label not found: " << operand << endl;
             listingFile << setfill(' ') << setw(8) << left << location
@@ -237,16 +262,22 @@ string Assembler::passTwo(const string& intermfile){
                 << setw(8) << left << opcode
                 << setw(10) << left << operand
                 << setw(8) << left << objcode << endl;
-            continue;          // skip further processing of this line
+            // skip further processing of this line
+            continue;          
         }
+        //If this is a 'WORD' directive, then it will turn the decimal value into a 
+        //3-byte hex string
         else if(opcode == "WORD") {
             int value = stoi(operand);
             stringstream ss;
             ss << hex << uppercase << setfill('0') << setw(6) << value;
             objcode = ss.str();
         }
+        //This will handle 'BYTE' directives with character constants'C'
+        //It will initially convrt each character into its two-digit hex code
         else if(opcode == "BYTE"){
-            if(operand[0] == 'C') { //Character constant
+            //Character constant
+            if(operand[0] == 'C') { 
                 string chars = operand.substr(2, operand.length() - 3);
                 for (int i = 0; i < chars.length(); i++) {
                     stringstream ss;
@@ -254,18 +285,38 @@ string Assembler::passTwo(const string& intermfile){
                     objcode += ss.str();
                 }
             }
-            else if(operand[0] == 'X'){ //Hexadecimal constant
+            //Hexadecimal constant
+            else if(operand[0] == 'X'){ 
                 objcode = operand.substr(2, operand.length() - 3);
             }
         }
+        //This will handle "RSUB" instruction where the object code will only consists
+        //of the "RSUB" opcode 
+        else if(opcode == "RSUB"){
+            OpcodeInfo info = OPTAB.getOpcodeInfo(opcode);
+            int rsubInt = stoi(info.opcodeHex, nullptr, 16);
+            //Assign 1 to the n and i bits and apply it to the opcode.
+            rsubInt |= 3; 
 
-        ////Temporary variable for the opcode that will be used to get the opcode info from the Opcode Table
+            stringstream rsubs;
+            rsubs << uppercase << hex << setfill('0') << setw(2) << rsubInt;
+            rsubs << "0000"; 
+            objcode = rsubs.str();
+            listingFile << setfill(' ') << setw(8) << left << location
+                << setw(8) << left << label
+                << setw(8) << left << opcode
+                << setw(10) << left << operand
+                << setw(8) << left << objcode << endl;
+            continue;
+        }
+
+        //Temporary variable for the opcode that will be used to get the opcode info from the Opcode Table
         string cleanOpcode = opcode;
         
         //Temporary variable for the operand that will be used to get the label's address from the Symbol Table
         string cleanOperand = operand;
 
-       // n and i flags
+        // n and i flags
         //Check for indirect addressing
         if(!operand.empty()){
             if(operand[0] == '@'){
@@ -275,15 +326,17 @@ string Assembler::passTwo(const string& intermfile){
             }
             //Check for immediate addressing
             else if(operand[0] == '#'){
-                //check if operand is a constant value
-                if(isdigit(operand[1])){
-                    disp = stoi(operand.substr(1));
-                    b = 0; 
-                    p = 0;
-                }
                 n = 0;
                 i = 1;
                 cleanOperand = operand.substr(1);
+            
+                // Check if the immediate value is a constant
+                if(!cleanOperand.empty() && isdigit(cleanOperand[0])){
+                    ta = stoi(cleanOperand); 
+                    disp = ta;               
+                    b = 0;
+                    p = 0;
+                }
             }
             //If the n and i flags are both still 0, then the addressing mode is simple addressing
             else{
@@ -308,7 +361,7 @@ string Assembler::passTwo(const string& intermfile){
         }
 
     
-        //Assign the correct instruction forma
+        //Assign the correct instruction format
         if(OPTAB.isInstruction(cleanOpcode)){ 
             OpcodeInfo info = OPTAB.getOpcodeInfo(cleanOpcode);
 
@@ -331,14 +384,16 @@ string Assembler::passTwo(const string& intermfile){
             continue;
         }
 
-        //Check to see if the operand is a label or a constant then adjust target address accordingly
+        //Check to see if the operand is a label or a constant then adjust target address if needed
         if(p != 0 || b != 0){
             if(!cleanOperand.empty() && isdigit(cleanOperand[0])){
                 ta = stoi(cleanOperand);
             }
             else{
                 ta = SYMTAB.getAddress(cleanOperand);
-                if(ta == -1){ //Label not in symbol table
+                //Error handling if label was not in the symbol table
+                if(ta == -1){ 
+                    objcode = "000000";
                     listingFile << setfill(' ') << setw(8) << left << location
                         << setw(8) << left << label
                         << setw(8) << left << opcode
@@ -347,6 +402,9 @@ string Assembler::passTwo(const string& intermfile){
                     continue; 
                 } 
             }
+            //This will compute the next program counter
+            //It turns the hex location string into an int and adds the 
+            //instructions byte length
             pc = stoi(location, nullptr, 16) + format; 
             int diff = ta - pc;
             //Pc relative
@@ -364,12 +422,15 @@ string Assembler::passTwo(const string& intermfile){
         }
         
         //Construct Object code
-        OpcodeInfo info = OPTAB.getOpcodeInfo(cleanOpcode); 
-        int opcodeInt = stoi(info.opcodeHex, nullptr, 16); //Get the opcode hex value from the Opcode Table
-        //Check which format
+        OpcodeInfo info = OPTAB.getOpcodeInfo(cleanOpcode);
+        //Get the opcode hex value from the Opcode Table 
+        int opcodeInt = stoi(info.opcodeHex, nullptr, 16); 
+        //Check which format it is
         if(format == 1){
             objcode = info.opcodeHex;
         }
+        //This is format 2 and it will use two registers
+        //R1 and R2 from the operand
         else if(format == 2){
             stringstream ss(operand);
             string reg1 = "";
@@ -385,7 +446,7 @@ string Assembler::passTwo(const string& intermfile){
 
             //Error handling, in the case of invalid register 
             if (r1 == -1 || (!reg2.empty() && r2 == -1)) {
-                //Take this out in final code
+                //This is for the printing, then it will continue onto the next line
                 listingFile << setfill(' ') << setw(8) << left << location
                     << setw(8) << left << label
                     << setw(8) << left << opcode
@@ -393,6 +454,8 @@ string Assembler::passTwo(const string& intermfile){
                     << setw(8) << left << objcode << endl;
                 continue;
             }
+            //this will turn format 2 object code into 2 bytes, then it will turn it into a
+            //4 digit hex string
             opcodeInt = stoi(info.opcodeHex, nullptr, 16);
             int objCode = (opcodeInt << 8) | (r1 << 4) | r2;
             stringstream objCodeStream;
@@ -400,17 +463,21 @@ string Assembler::passTwo(const string& intermfile){
             objcode = objCodeStream.str();
         }
 
-        else if(format == 3 || format == 4){                                                
-            opcodeInt = (opcodeInt & 0xFC) | (n<<1) | i; //first two nibbles, made up by opcode & n/i flags                                         
-            int flags = (x << 3) | (b << 2) | (p << 1) | e; //third nibble made up by the xbpe flags
+        else if(format == 3 || format == 4){  
+            //first two nibbles, made up by opcode & n/i flags                                              
+            opcodeInt = (opcodeInt & 0xFC) | (n<<1) | i;
+            //third nibble made up by the xbpe flags                                        
+            int flags = (x << 3) | (b << 2) | (p << 1) | e; 
 
+            //format 3
             if(format == 3){
                 int objCode = (opcodeInt << 16) | (flags << 12) | (disp & 0xFFF);
                 stringstream ss;
                 ss << hex << uppercase << setfill('0') << setw(6) << objCode;
                 objcode = ss.str();
             }
-            else{ //Format 4
+            //Format 4
+            else{ 
                 int objCode = (opcodeInt << 24) | (flags << 20) | (ta & 0xFFFFF);
                 stringstream ss;
                 ss << hex << uppercase << setfill('0') << setw(8) << objCode;
@@ -426,6 +493,7 @@ string Assembler::passTwo(const string& intermfile){
             << setw(8) << left << objcode << endl;
         
     }
+    //stop writing to the listingFile
     listingFile.close();
 
     return listingFileName; 

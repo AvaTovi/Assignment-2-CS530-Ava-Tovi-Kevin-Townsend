@@ -16,26 +16,26 @@ all: $(TRG)
 
 # Build executable
 $(TRG): $(OBJS)
-	@echo "🔧 Linking object files..."
+	@echo " Linking object files..."
 	$(CXX) $(CXXFLAGS) -o $@ $(OBJS)
 
 # Compile source files
 $(SRC)/%.o: $(SRC)/%.cpp
-	@echo "🔨 Compiling $<..."
+	@echo " Compiling $<..."
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 # Clean build artifacts
 clean:
-	@echo "🧹 Cleaning up..."
+	@echo " Cleaning up..."
 	rm -f $(SRC)/*.o $(TRG) *.interm *.st *.l
 
 # Run the assembler
 run: all
-	@echo "🚀 Running test1.sic..."
+	@echo " Running test1.sic..."
 	./$(TRG) test1.sic
 
 # Debug target using Homebrew’s gdb
 .PHONY: debug
 debug: all
-	@echo "🐞 Launching gdb ($(GDB))…"
+	@echo " Launching gdb ($(GDB))…"
 	$(GDB) --args ./$(TRG)
