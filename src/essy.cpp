@@ -1,4 +1,5 @@
 // main function where it will have CLI handling
+//Ava did passOne and Kevin did passTwo
 
 // This is the Pass 1 logic
 
@@ -37,8 +38,10 @@ int main(int argc, char* argv[]) {
         //Continue from here, --Do Pass 2 logic--
         //Make sure the Pass 2 line is assembler.passTwo like how I did my Pass 1
 
+        //this runs it on the intermediate file and gets the .l filename
         string listingfile = assembler.passTwo(intermfile);
 
+        //move onto the next file argument
         index++;
     }
 

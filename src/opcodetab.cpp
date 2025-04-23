@@ -1,8 +1,11 @@
+//Kevin did this
+
 #include "opcodetab.h"
 #include "iostream"
 
-OpcodeTab::OpcodeTab(){ //Constructor that fills in the opcode table with all of the opcodes
-                        // and the respective opcodeinfo
+OpcodeTab::OpcodeTab(){ 
+      //This is opcode table and it provides each instructions hex code 
+      //and the format it uses
       optable["ADD"] = {"18", {3, 4}};
       optable["ADDF"] = {"58", {3, 4}};
       optable["ADDR"] = {"90", {2}};
@@ -66,16 +69,19 @@ OpcodeTab::OpcodeTab(){ //Constructor that fills in the opcode table with all of
 };
 
 OpcodeInfo OpcodeTab::getOpcodeInfo(const string& instruction){ 
-    if(isInstruction(instruction)){ //If the instruction exists, return the opcodeinfo
+    //If the instruction exists, return the opcodeinfo
+    if(isInstruction(instruction)){ 
         return optable.at(instruction);
     }
-    else{ //If the instuction is not a SIC/XE instrucion throw an error, stating that it's invalid
+    else{
+         //If the instuction is not a SIC/XE instrucion throw an error
         throw runtime_error("Invalid instruction: " + instruction);
     }
 };
 
-bool OpcodeTab::isInstruction(const string& instruction){ //Checks tha67u7u7765t the instruction exists in
-                                                          //the opcode table
+//Checks that the instruction exists in
+//the opcode table
+bool OpcodeTab::isInstruction(const string& instruction){
     if(optable.find(instruction) != optable.end()){
         return true;
     }
