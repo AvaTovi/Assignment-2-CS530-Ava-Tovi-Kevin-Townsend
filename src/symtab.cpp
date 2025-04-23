@@ -4,12 +4,14 @@
 #include "symtab.h"
 #include <fstream>
 #include <iostream>
+#include <iomanip>
 
 using namespace std;
 
+//This prints every symbol and the addresses of the symbols in uppercase hex
 void SymbolTable::printAll() const {
     for (auto const & entry : table) {
-        std::cout << entry.first << " -> 0x" 
+        cout << entry.first << " -> 0x" 
         << hex << uppercase << entry.second << dec << "\n";
     }
 }
@@ -42,7 +44,11 @@ void SymbolTable::writeToFile(const string& filename) {
     //triggering error message
     if (symFile) {
         for (const auto & entry : table) {
-            symFile << entry.first << " " << entry.second << endl;
+            symFile
+            << entry.first << " "
+            << hex << uppercase
+            << setw(4) << setfill('0') << entry.second
+            << dec << "\n";
         }
         cout << "✅ Symbol table export complete! File saved as: " << filename << endl;
     } 
